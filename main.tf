@@ -31,10 +31,21 @@ resource "aws_s3_bucket_public_access_block" "public_access" {
   restrict_public_buckets = false
 }
 
-# 4. Add Bucket Policy allowing Public Read Access for website contents
+# 4. Configure Bucket Ownership Controls
+resource "aws_s3_bucket_ownership_controls" "ownership" {
+  bucket = aws_s3_bucket.website_bucket.id
+  rule {
+    object_ownership = "BucketOwnerPreferred"
+  }
+}
+
+# 5. Add Bucket Policy allowing Public Read Access for website contents
 resource "aws_s3_bucket_policy" "public_read_policy" {
-  bucket     = aws_s3_bucket.website_bucket.id
-  depends_on = [aws_s3_bucket_public_access_block.public_access]
+  bucket = aws_s3_bucket.website_bucket.id
+  depends_on = [
+    aws_s3_bucket_public_access_block.public_access,
+    aws_s3_bucket_ownership_controls.ownership
+  ]
 
   policy = jsonencode({
     Version = "2012-10-17"
