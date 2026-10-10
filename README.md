@@ -11,17 +11,25 @@ This project contains a web application (`index.html`) deployed to **AWS S3 Stat
 
 ## 🏗️ Architecture Overview
 
-```
-┌────────────────────────┐      OIDC Token      ┌────────────────────────┐
-│  GitHub Actions CI/CD  │ ───────────────────> │  AWS IAM Role (OIDC)   │
-└───────────┬────────────┘                      └───────────┬────────────┘
-            │                                               │
-            │  1. terraform init / plan / apply             │ 2. Assumes Role
-            ▼                                               ▼
-┌────────────────────────────────────────────────────────────────────────┐
-│                          AWS S3 Static Website                         │
-│                    (Hosts index.html with public access)              │
-└────────────────────────────────────────────────────────────────────────┘
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Developer as Developer / Git
+    participant GHA as GitHub Actions Runner
+    participant AWS_STS as AWS STS (OIDC Provider)
+    participant TF as Terraform CLI
+    participant S3 as AWS S3 Bucket
+    actor EndUser as End User / Browser
+
+    Developer->>GHA: Git Push to main branch
+    GHA->>AWS_STS: Request temporary credentials via GitHub OIDC Token
+    AWS_STS-->>GHA: Return temporary AWS Session Credentials
+    GHA->>TF: Run terraform init, plan, and apply
+    TF->>S3: Create S3 Bucket (sample-project-dev-suffix)
+    TF->>S3: Enable S3 Website Hosting & Public Read Policy
+    TF->>S3: Upload index.html web page
+    TF-->>GHA: Output website_url (http://bucket-name.s3-website-us-east-1.amazonaws.com)
+    EndUser->>S3: Visit Website URL -> Renders Live HTML Page
 ```
 
 ---
